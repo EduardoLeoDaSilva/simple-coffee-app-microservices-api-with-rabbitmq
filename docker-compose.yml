@@ -1,0 +1,73 @@
+version: "3.9"
+services:
+  rabbitMQ:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-container
+    networks: 
+      - coffee-project-nt
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=dudi
+      - RABBITMQ_DEFAULT_PASS=123
+
+
+
+  mysql:
+    image: mysql
+    container_name: mysql
+    networks: 
+      - coffee-project-nt
+    ports: 
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=123
+      
+  order-service:
+    image: order-service:1
+    container_name: order-service-container
+    networks: 
+      - coffee-project-nt
+    ports: 
+      - "5000:80"
+    depends_on:
+      - rabbitMQ
+    environment:
+      - ConnectionStrings:Default=Server=mysql;User Id=root;Password=123;Database=order
+    env_file:
+      - .env
+    restart: on-failure
+    
+  payment-service:
+    image: payment-service:1
+    container_name: payment-service-container
+    networks: 
+      - coffee-project-nt
+    ports: 
+      - "5001:80"
+    depends_on:
+      - rabbitMQ
+    env_file:
+      - .env
+    restart: on-failure
+
+  store-service:
+    image: store-service:1
+    container_name: store-service-container
+    networks: 
+      - coffee-project-nt
+    ports: 
+      - "5002:80"
+    
+    depends_on:
+      - rabbitMQ
+    environment:
+      - ConnectionStrings:Default=Server=mysql;User Id=root;Password=123;Database=store
+    env_file:
+      - .env
+    restart: on-failure
+
+networks:
+  coffee-project-nt:
+    driver: bridge
